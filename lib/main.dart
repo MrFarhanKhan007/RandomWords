@@ -1,5 +1,6 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -14,12 +15,12 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => MyAppState(),
       child: MaterialApp(
-        title: 'Namer App',
+        title: 'Random Words For You',
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         ),
-        home: MyHomePage(),
+        home: const MyHomePage(),
       ),
     );
   }
@@ -32,40 +33,125 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  var favourites= <WordPair>[];
-  void toggleFavourite(){
-    if(favourites.contains(current)){
+  var favourites = <WordPair>[];
+  void toggleFavourite() {
+    if (favourites.contains(current)) {
       favourites.remove(current);
-    }else{
+    } else {
       favourites.add(current);
     }
     notifyListeners();
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  var selectedIndex = 0;
+  @override
+  Widget build(BuildContext context) {
+    Widget page;
+    switch (selectedIndex) {
+      case 0:
+        page = const GeneratorPage();
+        break;
+      case 1:
+        page = const Placeholder();
+        break;
+      default:
+        throw UnimplementedError("Page not implemented!");
+    }
+    return LayoutBuilder(
+      builder: (context,constraints) {
+        return Scaffold(
+          body: Row(
+            children: [
+              SafeArea(
+                child: NavigationRail(
+                  extended: false,
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.home),
+                      label: Text('Home'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.favorite),
+                      label: Text('Favorites'),
+                    ),
+                  ],
+                  selectedIndex: selectedIndex,
+                  onDestinationSelected: (value) {
+                    setState(() {
+                      selectedIndex = value;
+                    });
+                  },
+                ),
+              ),
+              Expanded(
+                child: Container(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    child: page),
+              ),
+            ],
+          ),
+        );
+      }
+    );
+  }
+}
+
+class GeneratorPage extends StatelessWidget {
+  const GeneratorPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var pair = appState.current;
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            RandomWordWidget(pair: pair),
-            const SizedBox(height: 10,),
-            ElevatedButton(
+
+    IconData icon;
+    if (appState.favourites.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          RandomWordWidget(pair: pair),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  appState.toggleFavourite();
+                },
+                icon: Icon(icon),
+                label: const Text('Like'),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
                 onPressed: () {
                   appState.getNext();
                 },
-                child: const Text('Next'))
-          ],
-        ),
+                child: const Text('Next'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
+
+// ...
 
 class RandomWordWidget extends StatelessWidget {
   const RandomWordWidget({
